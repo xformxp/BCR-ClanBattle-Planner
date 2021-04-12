@@ -92,14 +92,14 @@ class Window:
         if self.box_file is None or self.choice_file is None:
             self.writeResult("文件为空")
             return
-        with open(self.box_file, "r") as f:
+        with open(self.box_file, "r", encoding="utf-8") as f:
             box_read = f.read().split()
             filtered_box = []
             for ch in box_read:
                 filtered_box.append(chara.getCharaId(ch))
             self.box = set(chara.getCharaList()) - set(filtered_box)
         self.choice = []
-        with open(self.choice_file, "r") as f:
+        with open(self.choice_file, "r", encoding="utf-8") as f:
             choices = f.read().strip().split('\n')
             for choice in choices:
                 c = choice.split()
@@ -118,13 +118,15 @@ class Window:
         if len(res) == 0:
             self.writeResult('没有可用分刀')
             return
-        res = res[:5]
+        res = res
         for i, r in enumerate(res):
             output.append(f"PLAN {i + 1} TOTAL={r[0]}\n" +
                           '\n'.join([f"{x['name']}"
                                      f"({', '.join(map(lambda k: chara.getCharaName(k, self.JPN.get()), x['team']))}), "
                                      f"{x['dmg']}" for x in r[1]]))
-        self.writeResult('\n\n'.join(output))
+        with open("result.out", "w", encoding="utf-8") as f:
+            f.write('\n\n'.join(output))
+        self.writeResult('\n\n'.join(output[:5]))
 
     def checkAvailability(self, perm: (dict, dict, dict)) -> (bool, int):
         box_copy = self.box
