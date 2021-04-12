@@ -118,7 +118,7 @@ class Window:
         if len(res) == 0:
             self.writeResult('没有可用分刀')
             return
-        res = res
+        res = res[:100]
         for i, r in enumerate(res):
             output.append(f"PLAN {i + 1} TOTAL={r[0]}\n" +
                           '\n'.join([f"{x['name']}"
