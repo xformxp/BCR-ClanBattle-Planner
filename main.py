@@ -30,14 +30,15 @@ class CharaList:
                      '可可罗', '水白', '松鼠', '深月', '妹法', '姐法', '狼布丁', '亚里沙', '妹弓', '暴击弓', 'tp弓', '魅魔',
                      '女仆', '美里', '普黑', '初音', '大眼', '水女仆', '水黑', '香菜', '千歌', '狐狸', 'ue', '雪', 'xcw', '瓜眼',
                      # Dec 2020之前是这些角色
-					 '七七香', '圣千', '圣锤', '春田', '春猫', '春剑', '情姐', '情病', '511', '霞', '步未', '拉姆', '蕾姆', 'emt'
+					 '七七香', '圣千', '圣锤', '春田', '春猫', '春剑', '情姐', '情病', '511', '霞', '步未', '拉姆', '蕾姆', 'emt',
+                     '安', '古雷亚', '江花', '忍扇', '水暴', '水电', '水狼', '水狐'
                      ]
         self.curr_chars = []
         for ch in char_list:
             self.curr_chars.append(self.chara_id[ch])
 
     def getCharaId(self, name):
-        return self.chara_id[name]
+        return self.chara_id[str.lower(name)]
 
     def getCharaList(self):
         return self.curr_chars
