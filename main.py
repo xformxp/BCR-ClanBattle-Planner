@@ -7,8 +7,10 @@ from tkinter.filedialog import *
 import itertools
 import _pcr_data
 import re
-from typing import List
-
+import requests
+import json
+from lxml import etree
+from typing import List, Tuple
 
 def loadFile() -> str:
     filename = askopenfilename(filetypes=[("Text file", "*.txt", "TEXT")], defaultextension="*.txt")
@@ -31,7 +33,7 @@ class CharaList:
                      '女仆', '美里', '普黑', '初音', '大眼', '水女仆', '水黑', '香菜', '千歌', '狐狸', 'ue', '雪', 'xcw', '瓜眼',
 					 '七七香', '圣千', '圣锤', '春田', '春猫', '春剑', '情姐', '情病', '511', '霞', '步未', '拉姆', '蕾姆', 'emt',
                      '安', '古雷亚', '江花', '忍扇', '水暴', '水电', '水狼', '水狐', '生菜', 'nnk', '华哥', '瓜炸', 'mcw', '万圣兔',
-                     '露娜', '嘉夜'#, '圣克', '春黑', '春妈', '魔驴', '高达', '卵用', '凛', 'uni', '切噜'
+                     '露娜', '嘉夜', '圣克', '春黑', '春妈', '魔驴', '高达', '卵用', '凛',# 'uni', '切噜'
                      ]
         self.curr_chars = []
         for ch in char_list:
@@ -46,9 +48,31 @@ class CharaList:
     def getCharaName(self, chara_id, jpn=0):
         return _pcr_data.CHARA_NAME[chara_id][jpn]
 
-
 chara = CharaList()
 
+class Spider:
+    def __init__(self):
+        result = requests.get("https://www.caimogu.cc/gzlj.html")
+        html = etree.HTML(result.content.decode("utf-8"))
+        scripts = html.xpath('//script')[0]
+        script_str = etree.tostring(scripts).decode("utf-8")
+        script_data = re.search("var _data = '(.*)'", script_str)
+        self.data = json.loads(script_data.group(1))
+        print("Data fetched from caimogu")
+    
+    def write_homework(self, stage):
+        with open("作业.txt", "w", encoding = "utf-8") as f:
+            for boss in self.data:
+                if boss["stage"] == stage:
+                    homeworks = boss["homework"]
+                    for hw in homeworks:
+                        if hw['auto'] < 2:
+                            charas = [hw['unit'][x]['name'] for x in range(5)]
+                            f.write(f"{hw['sn']} {' '.join(charas)} {hw['damage']}\n")
+    
+    def print(self):
+        with open("f.out", "wb") as f:
+            f.write(json.dumps(self.data, indent = 4, ensure_ascii = False).encode("utf-8"))
 
 class Window:
     def __init__(self, title, geometry):
@@ -64,19 +88,25 @@ class Window:
         self.l_party = Label(self.F1, text=f"Box文件（列出你缺的box）: {self.box_file}")
         self.f_party = Button(self.F1, text='Open', command=self.loadParty)
         self.l_choice = Label(self.F1, text=f"作业文件: {self.choice_file}")
+        self.gen_choice = Button(self.F1, text = 'Gen', command = self.genChoice)
         self.f_choice = Button(self.F1, text='Open', command=self.loadChoice)
         self.F1.pack(pady=10)
         self.F2.pack(ipadx=20, ipady=20)
-        self.l_party.grid(row=0, column=1, pady=5)
-        self.f_party.grid(row=0, column=0)
-        self.l_choice.grid(row=1, column=1, pady=5)
-        self.f_choice.grid(row=1, column=0)
-        self.JPN = IntVar(value=1)
-        Checkbutton(self.F1, text="谜语人模式", variable=self.JPN).grid(row=2, column=0, columnspan=2, pady=5)
+        self.l_party.grid(row=0, column=2, pady=5)
+        self.f_party.grid(row=0, column=1)
+        self.gen_choice.grid(row=1, column=0, padx=5, pady=5)
+        self.l_choice.grid(row=1, column=2, pady=5)
+        self.f_choice.grid(row=1, column=1)
+        self.JPN = IntVar(value=0)
+        Checkbutton(self.F1, text="谜语人模式", variable=self.JPN).grid(row=2, column=0, columnspan=3, pady=5)
         button = Button(self.F1, text="计算", command=self.calc)
-        button.grid(row=3, column=0, columnspan=2, pady=5)
+        button.grid(row=3, column=0, columnspan=3, pady=5)
         self.result = Label(self.F2, text="", font=('TkDefaultFont', 12))
         self.result.pack()
+    
+    def genChoice(self):
+        spider = Spider()
+        spider.write_homework(4)
 
     def loadParty(self):
         self.box_file = loadFile()
@@ -129,7 +159,7 @@ class Window:
             f.write('\n\n'.join(output))
         self.writeResult('\n\n'.join(output[:5]))
 
-    def checkAvailability(self, perm: (dict, dict, dict)) -> (bool, int):
+    def checkAvailability(self, perm: Tuple[dict, dict, dict]) -> Tuple[bool, int]:
         box_copy = self.box
         team = [x["team"] for x in perm]
         for i, j, k in itertools.product(itertools.combinations(team[0], 4),
@@ -142,7 +172,6 @@ class Window:
 
     def mainloop(self):
         self.window.mainloop()
-
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
