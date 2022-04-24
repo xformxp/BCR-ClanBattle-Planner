@@ -5,7 +5,7 @@
 from tkinter import *
 from tkinter.filedialog import *
 import itertools
-import _pcr_data
+import _pcr_data_202204 as _pcr_data
 import re
 import requests
 import json
@@ -23,21 +23,11 @@ def loadFile() -> str:
 class CharaList:
     def __init__(self):
         self.chara_id = dict()
+        self.curr_chars = []
         for ch in _pcr_data.CHARA_NAME:
             for alias in _pcr_data.CHARA_NAME[ch]:
                 self.chara_id[alias] = ch
-        char_list = ['羊驼', '布丁', '空花', '黑骑', '狗拳', '佩可', '流夏', '望', '狼', '哈哈剑', '茉莉', '裁缝', '猫拳',
-                     '炸弹人', '熊锤', '猫剑', '智', '水猫剑', '病娇', '水吃', '铃铛', '姬塔', '剑圣', '姐姐', '克', '兔子',
-                     '忍', '奶牛', '黄骑', '毛二力', '扇子', '子龙', '伊利亚', '咲恋', '环奈', '中二', '万圣忍', '水子龙',
-                     '可可罗', '水白', '松鼠', '深月', '妹法', '姐法', '狼布丁', '亚里沙', '妹弓', '暴击弓', 'tp弓', '魅魔',
-                     '女仆', '美里', '普黑', '初音', '大眼', '水女仆', '水黑', '香菜', '千歌', '狐狸', 'ue', '雪', 'xcw', '瓜眼',
-					 '七七香', '圣千', '圣锤', '春田', '春猫', '春剑', '情姐', '情病', '511', '霞', '步未', '拉姆', '蕾姆', 'emt',
-                     '安', '古雷亚', '江花', '忍扇', '水暴', '水电', '水狼', '水狐', '生菜', 'nnk', '华哥', '瓜炸', 'mcw', '万圣兔',
-                     '露娜', '嘉夜', '圣克', '春黑', '春妈', '魔驴', '高达', '卵用', '凛',# 'uni', '切噜'
-                     ]
-        self.curr_chars = []
-        for ch in char_list:
-            self.curr_chars.append(self.chara_id[ch])
+            self.curr_chars.append(ch)
 
     def getCharaId(self, name):
         return self.chara_id[str.lower(name)]
@@ -52,12 +42,20 @@ chara = CharaList()
 
 class Spider:
     def __init__(self):
-        result = requests.get("https://www.caimogu.cc/gzlj.html")
-        html = etree.HTML(result.content.decode("utf-8"))
-        scripts = html.xpath('//script')[0]
-        script_str = etree.tostring(scripts).decode("utf-8")
-        script_data = re.search("var _data = '(.*)'", script_str)
-        self.data = json.loads(script_data.group(1))
+        headers = {
+            'x-requested-with': 'XMLHttpRequest',
+        }
+        charas = requests.get("https://www.caimogu.cc/gzlj/data/icon?date=", headers = headers).json()
+        self.chara = dict()
+        for iconmap in charas["data"]:
+            for icon in iconmap:
+                self.chara[icon["id"]] = icon["iconValue"]
+        #with open('icon.out', 'w', encoding='utf-8') as f:
+        #    f.write(json.dumps(self.chara, indent = 4, ensure_ascii = False))
+        homework = requests.get("https://www.caimogu.cc/gzlj/data?date=", headers = headers).json()
+        self.data = homework["data"]
+        #with open('f.out', 'w', encoding='utf-8') as f:
+        #    f.write(json.dumps(self.data, indent = 4, ensure_ascii = False))
         print("Data fetched from caimogu")
     
     def write_homework(self, stage):
@@ -67,7 +65,7 @@ class Spider:
                     homeworks = boss["homework"]
                     for hw in homeworks:
                         if hw['auto'] < 2:
-                            charas = [hw['unit'][x]['name'] for x in range(5)]
+                            charas = [self.chara[hw['unit'][x]] for x in range(5)]
                             f.write(f"{hw['sn']} {' '.join(charas)} {hw['damage']}\n")
     
     def print(self):
@@ -76,6 +74,7 @@ class Spider:
 
 class Window:
     def __init__(self, title, geometry):
+        self.stage = 1
         self.window = Tk()
         self.window.title(title)
         self.window.geometry(geometry)
@@ -88,7 +87,7 @@ class Window:
         self.l_party = Label(self.F1, text=f"Box文件（列出你缺的box）: {self.box_file}")
         self.f_party = Button(self.F1, text='Open', command=self.loadParty)
         self.l_choice = Label(self.F1, text=f"作业文件: {self.choice_file}")
-        self.gen_choice = Button(self.F1, text = 'Gen', command = self.genChoice)
+        self.gen_choice = Button(self.F1, text = '作业网生成作业', command = self.genChoice)
         self.f_choice = Button(self.F1, text='Open', command=self.loadChoice)
         self.F1.pack(pady=10)
         self.F2.pack(ipadx=20, ipady=20)
@@ -98,6 +97,8 @@ class Window:
         self.l_choice.grid(row=1, column=2, pady=5)
         self.f_choice.grid(row=1, column=1)
         self.JPN = IntVar(value=0)
+        self.l_stage = Button(self.F1, text=f"{self.stage}阶段（切换）", command = self.changeStage)
+        self.l_stage.grid(row=0, column=0, pady=5)
         Checkbutton(self.F1, text="谜语人模式", variable=self.JPN).grid(row=2, column=0, columnspan=3, pady=5)
         button = Button(self.F1, text="计算", command=self.calc)
         button.grid(row=3, column=0, columnspan=3, pady=5)
@@ -106,7 +107,11 @@ class Window:
     
     def genChoice(self):
         spider = Spider()
-        spider.write_homework(4)
+        spider.write_homework(self.stage)
+    
+    def changeStage(self):
+        self.stage = 1 + self.stage % 4
+        self.l_stage.config(text=f"{self.stage}阶段（切换）")
 
     def loadParty(self):
         self.box_file = loadFile()
@@ -177,5 +182,3 @@ class Window:
 if __name__ == '__main__':
     window = Window('分刀', '800x600')
     window.mainloop()
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
