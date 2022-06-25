@@ -2,7 +2,10 @@
 自制简易BCR分刀器
 
 ## 作业表
-https://docs.qq.com/sheet/DWkdtR2djbnFiUGRk?tab=ltc6xo
+<del>https://docs.qq.com/sheet/DWkdtR2djbnFiUGRk?tab=ltc6xo</del><br>
+https://www.caimogu.cc/gzlj.html
 
 ## Usage
-把作业表复制到作业里面 编辑好当前进度和缺的box 跑main.py
+1. 选择阶段，从公会战作业网爬取作业
+2. 填写缺的box和想打的boss
+3. 生成三刀分刀
