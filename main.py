@@ -118,7 +118,7 @@ class Window:
         spider.write_homework(self.stage)
     
     def changeStage(self):
-        self.stage = 1 + self.stage % 4
+        self.stage = 1 + self.stage % 5
         self.l_stage.config(text=f"{self.stage}阶段（切换）")
 
     def loadParty(self):
